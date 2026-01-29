@@ -1,0 +1,12 @@
+# Root requirements for local development (without Docker)
+# Each service has its own requirements.txt
+
+# Django server
+Django==6.0.1
+djangorestframework==3.16.1
+psycopg[binary]==3.2.4
+
+# FastAPI client
+fastapi==0.128.0
+uvicorn[standard]==0.34.0
+httpx==0.28.1
