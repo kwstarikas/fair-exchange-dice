@@ -5,6 +5,7 @@
 Django==6.0.1
 djangorestframework==3.16.1
 psycopg[binary]==3.2.4
+coverage==7.6.10
 
 # FastAPI client
 fastapi==0.128.0

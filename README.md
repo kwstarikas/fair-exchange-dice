@@ -72,3 +72,50 @@ python manage.py runserver
 cd client
 uvicorn main:app --reload --port 8001
 ```
+
+## Testing & Coverage
+
+### Run Tests
+
+```bash
+# With Docker
+docker compose exec server python manage.py test
+
+# Locally
+cd server
+python manage.py test
+```
+
+### Run Tests with Coverage
+
+```bash
+# With Docker
+docker compose exec server coverage run manage.py test
+docker compose exec server coverage html
+
+# Locally
+cd server
+coverage run manage.py test
+coverage html
+```
+
+### View Coverage Report
+
+After running coverage, an HTML report is generated in `server/htmlcov/`.
+
+Open `server/htmlcov/index.html` in your browser to see:
+- Overall coverage percentage
+- Per-file coverage breakdown
+- Line-by-line highlighting (green = covered, red = not covered)
+
+```bash
+# Open report (Linux)
+xdg-open server/htmlcov/index.html
+
+# Open report (Mac)
+open server/htmlcov/index.html
+```
+
+**Coverage targets:**
+- Aim for 80%+ coverage on new code
+- Red lines in the report indicate untested code paths
