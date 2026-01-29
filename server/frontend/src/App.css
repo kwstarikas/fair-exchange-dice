@@ -169,3 +169,124 @@ input:disabled {
   background: #f5f5f5;
   cursor: not-allowed;
 }
+
+/* Dashboard */
+.dashboard-container {
+  background: white;
+  padding: 40px;
+  border-radius: 16px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  width: 100%;
+  max-width: 500px;
+  text-align: center;
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #eee;
+}
+
+.dashboard-header h1 {
+  font-size: 1.5rem;
+  color: #333;
+  margin: 0;
+}
+
+.logout-btn {
+  padding: 8px 16px;
+  background: #ff4757;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.2s;
+}
+
+.logout-btn:hover {
+  background: #ff3344;
+}
+
+/* Dice Section */
+.dice-section {
+  padding: 30px 0;
+}
+
+.dice {
+  font-size: 120px;
+  line-height: 1;
+  margin-bottom: 20px;
+  transition: transform 0.1s;
+}
+
+.dice.rolling {
+  animation: shake 0.1s infinite;
+}
+
+@keyframes shake {
+  0% { transform: rotate(0deg); }
+  25% { transform: rotate(10deg); }
+  50% { transform: rotate(0deg); }
+  75% { transform: rotate(-10deg); }
+  100% { transform: rotate(0deg); }
+}
+
+.roll-btn {
+  padding: 14px 40px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 30px;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.roll-btn:hover:not(:disabled) {
+  transform: scale(1.05);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.roll-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.dice-result {
+  margin-top: 20px;
+  font-size: 1.2rem;
+  color: #666;
+}
+
+.dice-result strong {
+  color: #667eea;
+  font-size: 1.5rem;
+}
+
+/* User Info */
+.user-info {
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid #eee;
+  text-align: left;
+}
+
+.user-info h3 {
+  color: #333;
+  margin-bottom: 15px;
+}
+
+.user-info p {
+  color: #666;
+  margin: 8px 0;
+  font-size: 14px;
+}
+
+.user-info strong {
+  color: #333;
+}

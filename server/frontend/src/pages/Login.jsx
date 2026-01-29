@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 /**
  * Login Page Component
@@ -9,17 +10,29 @@ function Login() {
     password: ''
   })
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+  const navigate = useNavigate()
+
+  // Redirect if already logged in
+  useEffect(() => {
+    const token = localStorage.getItem('token')
+    if (token) {
+      navigate('/dashboard')
+    }
+  }, [navigate])
 
   const handleChange = (e) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
     })
+    if (error) setError('')
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
+    setLoading(true)
 
     try {
       const response = await fetch('/api/auth/login/', {
@@ -30,17 +43,19 @@ function Login() {
         body: JSON.stringify(formData)
       })
 
+      const data = await response.json()
+
       if (response.ok) {
-        const data = await response.json()
-        // Store token and redirect
+        // Store token and redirect to dashboard
         localStorage.setItem('token', data.token)
-        window.location.href = '/'
+        window.location.href = '/dashboard'
       } else {
-        const data = await response.json()
         setError(data.error || 'Login failed')
       }
     } catch (err) {
       setError('Network error. Please try again.')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -75,7 +90,9 @@ function Login() {
           />
         </div>
 
-        <button type="submit">Login</button>
+        <button type="submit" disabled={loading}>
+          {loading ? 'Logging in...' : 'Login'}
+        </button>
       </form>
 
       <p>Don't have an account? <a href="/register">Register</a></p>

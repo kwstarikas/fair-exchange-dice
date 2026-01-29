@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 /**
  * Registration Page Component
@@ -19,8 +20,16 @@ function Register() {
   })
   
   const [error, setError] = useState('')
-  const [success, setSuccess] = useState(false)
   const [loading, setLoading] = useState(false)
+  const navigate = useNavigate()
+
+  // Redirect if already logged in
+  useEffect(() => {
+    const token = localStorage.getItem('token')
+    if (token) {
+      navigate('/dashboard')
+    }
+  }, [navigate])
 
   // This runs when any input changes
   // "e" is the event object, e.target is the input element
@@ -83,7 +92,9 @@ function Register() {
       const data = await response.json()
 
       if (response.ok) {
-        setSuccess(true)
+        // Store token and redirect to dashboard
+        localStorage.setItem('token', data.token)
+        window.location.href = '/dashboard'
       } else {
         // Display the error message from the API
         setError(data.error || 'Registration failed. Please try again.')
@@ -93,16 +104,6 @@ function Register() {
     } finally {
       setLoading(false)
     }
-  }
-
-  // If registration successful, show success message
-  if (success) {
-    return (
-      <div className="register-container">
-        <h2>Registration Successful!</h2>
-        <p>You can now <a href="/login">login</a>.</p>
-      </div>
-    )
   }
 
   // JSX - looks like HTML but it's JavaScript
