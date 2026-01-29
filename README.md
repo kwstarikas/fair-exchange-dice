@@ -76,48 +76,70 @@ cd client
 uvicorn main:app --reload --port 8001
 ```
 
-## Testing & Coverage
+## Testing
 
-### Run Tests
+### Run All Tests
 
 ```bash
-# With Docker
-docker compose exec server python manage.py test
+# Django (server)
+cd server && python manage.py test
 
-# Locally
-cd server
-python manage.py test
+# FastAPI (client)
+cd client && pytest
 ```
 
-### Run Tests with Coverage
+### Django Tests
 
 ```bash
-# With Docker
-docker compose exec server coverage run manage.py test
-docker compose exec server coverage html
+# Run all tests
+python manage.py test
 
-# Locally
+# Verbose output
+python manage.py test -v 2
+
+# Run specific app tests
+python manage.py test authentication
+```
+
+### FastAPI Tests
+
+```bash
+# Run all tests
+pytest
+
+# Verbose output
+pytest -v
+
+# Run specific test file
+pytest test_main.py
+```
+
+## Coverage
+
+### Django Coverage
+
+```bash
 cd server
 coverage run manage.py test
 coverage html
+# Open server/htmlcov/index.html
+```
+
+### FastAPI Coverage
+
+```bash
+cd client
+coverage run -m pytest
+coverage html
+# Open client/htmlcov/index.html
 ```
 
 ### View Coverage Report
 
-After running coverage, an HTML report is generated in `server/htmlcov/`.
-
-Open `server/htmlcov/index.html` in your browser to see:
+Open `htmlcov/index.html` in your browser to see:
 - Overall coverage percentage
 - Per-file coverage breakdown
 - Line-by-line highlighting (green = covered, red = not covered)
-
-```bash
-# Open report (Linux)
-xdg-open server/htmlcov/index.html
-
-# Open report (Mac)
-open server/htmlcov/index.html
-```
 
 **Coverage targets:**
 - Aim for 80%+ coverage on new code
