@@ -37,6 +37,9 @@ docker compose watch
 
 - Django API: http://localhost:8000
 - Django Admin: http://localhost:8000/admin
+- Django Swagger: http://localhost:8000/api/docs/
+- Django ReDoc: http://localhost:8000/api/redoc/
+- Django OpenAPI Schema: http://localhost:8000/api/schema/
 - FastAPI Client: http://localhost:8001
 - FastAPI Docs: http://localhost:8001/docs
 
