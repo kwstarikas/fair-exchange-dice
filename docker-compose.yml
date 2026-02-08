@@ -54,5 +54,24 @@ services:
           path: ./client
           target: /app
 
+  frontend:
+    build:
+      context: ./server/frontend
+      dockerfile: Dockerfile
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_PROXY_TARGET: http://server:8000
+    depends_on:
+      - server
+    volumes:
+      - ./server/frontend:/app
+      - /app/node_modules
+    develop:
+      watch:
+        - action: sync
+          path: ./server/frontend
+          target: /app
+
 volumes:
   postgres_data:

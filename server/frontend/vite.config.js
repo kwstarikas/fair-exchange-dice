@@ -1,6 +1,9 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
+// In Docker use VITE_PROXY_TARGET=http://server:8000
+const proxyTarget = process.env.VITE_PROXY_TARGET || 'http://localhost:8000'
+
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
@@ -8,11 +11,11 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:8000',
+        target: proxyTarget,
         changeOrigin: true,
       },
       '/admin': {
-        target: 'http://localhost:8000',
+        target: proxyTarget,
         changeOrigin: true,
       },
     },
