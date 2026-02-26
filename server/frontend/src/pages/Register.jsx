@@ -13,6 +13,8 @@ function Register() {
   // useState creates a "state variable"
   // formData = current value, setFormData = function to update it
   const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
     username: '',
     email: '',
     password: '',
@@ -83,6 +85,8 @@ function Register() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          first_name: formData.firstName,
+          last_name: formData.lastName,
           username: formData.username,
           email: formData.email,
           password: formData.password
@@ -115,6 +119,32 @@ function Register() {
       {error && <div className="error">{error}</div>}
       
       <form onSubmit={handleSubmit}>
+        <div className="form-group">
+          <label htmlFor="firstName">First Name</label>
+          <input
+            type="text"
+            id="firstName"
+            name="firstName"
+            value={formData.firstName}
+            onChange={handleChange}
+            required
+            disabled={loading}
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="lastName">Last Name</label>
+          <input
+            type="text"
+            id="lastName"
+            name="lastName"
+            value={formData.lastName}
+            onChange={handleChange}
+            required
+            disabled={loading}
+          />
+        </div>
+
         <div className="form-group">
           <label htmlFor="username">Username</label>
           <input
