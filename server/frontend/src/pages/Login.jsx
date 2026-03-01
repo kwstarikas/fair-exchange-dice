@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { isLoggedIn, storeTokens } from '../auth'
 
 /**
  * Login Page Component
@@ -15,8 +16,7 @@ function Login() {
 
   // Redirect if already logged in
   useEffect(() => {
-    const token = localStorage.getItem('token')
-    if (token) {
+    if (isLoggedIn()) {
       navigate('/dashboard')
     }
   }, [navigate])
@@ -46,9 +46,8 @@ function Login() {
       const data = await response.json()
 
       if (response.ok) {
-        // Store token and redirect to dashboard
-        localStorage.setItem('token', data.token)
-        window.location.href = '/dashboard'
+        storeTokens(data.tokens)
+        navigate('/dashboard')
       } else {
         setError(data.error || 'Login failed')
       }
@@ -62,9 +61,9 @@ function Login() {
   return (
     <div className="login-container">
       <h2>Login</h2>
-      
+
       {error && <div className="error">{error}</div>}
-      
+
       <form onSubmit={handleSubmit}>
         <div className="form-group">
           <label htmlFor="username">Username</label>

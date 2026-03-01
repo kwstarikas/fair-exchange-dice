@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { isLoggedIn, storeTokens } from '../auth'
 
 /**
  * Registration Page Component
- * 
+ *
  * REACT CONCEPTS USED:
  * 1. useState - Stores form data that changes when user types
  * 2. Event handlers - Functions that run when user interacts (onClick, onChange)
@@ -20,15 +21,14 @@ function Register() {
     password: '',
     confirmPassword: ''
   })
-  
+
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
 
   // Redirect if already logged in
   useEffect(() => {
-    const token = localStorage.getItem('token')
-    if (token) {
+    if (isLoggedIn()) {
       navigate('/dashboard')
     }
   }, [navigate])
@@ -71,7 +71,7 @@ function Register() {
   const handleSubmit = async (e) => {
     e.preventDefault()  // Prevent page reload
     setError('')
-    
+
     // Validate before sending
     if (!validateForm()) return
 
@@ -96,9 +96,8 @@ function Register() {
       const data = await response.json()
 
       if (response.ok) {
-        // Store token and redirect to dashboard
-        localStorage.setItem('token', data.token)
-        window.location.href = '/dashboard'
+        storeTokens(data.tokens)
+        navigate('/dashboard')
       } else {
         // Display the error message from the API
         setError(data.error || 'Registration failed. Please try again.')
@@ -114,10 +113,10 @@ function Register() {
   return (
     <div className="register-container">
       <h2>Create Account</h2>
-      
+
       {/* Show error if exists */}
       {error && <div className="error">{error}</div>}
-      
+
       <form onSubmit={handleSubmit}>
         <div className="form-group">
           <label htmlFor="firstName">First Name</label>
