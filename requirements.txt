@@ -2,7 +2,7 @@
 # Each service has its own requirements.txt
 
 # Django server
-Django==6.0.1
+Django==6.0.3
 djangorestframework==3.16.1
 drf-spectacular==0.28.0
 psycopg[binary]==3.2.13
