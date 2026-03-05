@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { isLoggedIn, clearTokens, getRefreshToken, authFetch } from '../auth'
 
 /**
  * Dashboard Page - Shows after login
- * 
+ *
  * REACT CONCEPTS:
  * - useEffect: Runs code when component loads (like fetching user data)
  * - useNavigate: Programmatic navigation (redirect)
@@ -17,30 +18,25 @@ function Dashboard() {
 
   // Check if user is logged in when component loads
   useEffect(() => {
-    const token = localStorage.getItem('token')
-    if (!token) {
+    if (!isLoggedIn()) {
       navigate('/login')
       return
     }
 
     // Fetch user info
-    fetchUser(token)
+    fetchUser()
   }, [navigate])
 
-  const fetchUser = async (token) => {
+  const fetchUser = async () => {
     try {
-      const response = await fetch('/api/auth/me/', {
-        headers: {
-          'Authorization': `Token ${token}`
-        }
-      })
-      
+      const response = await authFetch('/api/auth/me/')
+
       if (response.ok) {
         const data = await response.json()
         setUser(data)
       } else {
         // Token invalid, redirect to login
-        localStorage.removeItem('token')
+        clearTokens()
         navigate('/login')
       }
     } catch (err) {
@@ -50,13 +46,13 @@ function Dashboard() {
 
   const rollDice = () => {
     setRolling(true)
-    
+
     // Animate dice rolling
     let rolls = 0
     const interval = setInterval(() => {
       setDiceValue(Math.floor(Math.random() * 6) + 1)
       rolls++
-      
+
       if (rolls > 10) {
         clearInterval(interval)
         setDiceValue(Math.floor(Math.random() * 6) + 1)
@@ -66,20 +62,16 @@ function Dashboard() {
   }
 
   const handleLogout = async () => {
-    const token = localStorage.getItem('token')
-    
     try {
-      await fetch('/api/auth/logout/', {
+      await authFetch('/api/auth/logout/', {
         method: 'POST',
-        headers: {
-          'Authorization': `Token ${token}`
-        }
+        body: JSON.stringify({ refresh: getRefreshToken() }),
       })
     } catch (err) {
       console.error('Logout error:', err)
     }
-    
-    localStorage.removeItem('token')
+
+    clearTokens()
     navigate('/')
   }
 
@@ -112,15 +104,15 @@ function Dashboard() {
         <div className={`dice ${rolling ? 'rolling' : ''}`}>
           {diceFaces[diceValue]}
         </div>
-        
-        <button 
-          onClick={rollDice} 
+
+        <button
+          onClick={rollDice}
           disabled={rolling}
           className="roll-btn"
         >
           {rolling ? 'Rolling...' : 'Roll Dice'}
         </button>
-        
+
         <p className="dice-result">
           You rolled: <strong>{diceValue}</strong>
         </p>
