@@ -10,6 +10,7 @@ from django.contrib.auth.models import User
 
 from .serializers import RegisterSerializer, LoginSerializer, UserSerializer
 from .helpers import _issue_jwt_pair
+from audit.models import log_event, AuditLog
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +34,7 @@ class AuthViewSet(viewsets.GenericViewSet):
 
         if serializer.is_valid():
             user = serializer.save()
+            log_event(AuditLog.REGISTER, request=request, user_id=user.id)
             tokens = _issue_jwt_pair(user)
             return Response(
                 {
@@ -59,6 +61,7 @@ class AuthViewSet(viewsets.GenericViewSet):
             )
 
             if user:
+                log_event(AuditLog.LOGIN_SUCCESS, request=request, user_id=user.id)
                 tokens = _issue_jwt_pair(user)
                 return Response(
                     {
@@ -68,6 +71,7 @@ class AuthViewSet(viewsets.GenericViewSet):
                     }
                 )
 
+            log_event(AuditLog.LOGIN_FAILED, request=request, user_id=None)
             return Response(
                 {"error": "Invalid credentials"},
                 status=status.HTTP_401_UNAUTHORIZED,
@@ -120,11 +124,24 @@ class AuthViewSet(viewsets.GenericViewSet):
         except Exception as e:
             logger.warning("Failed to blacklist access token: %s", e)
 
+        log_event(AuditLog.LOGOUT, request=request, user_id=request.user.id)
         return Response({"message": "Logged out successfully"})
 
     @action(detail=False, methods=["get"])
     def me(self, request):
         return Response(UserSerializer(request.user).data)
+
+    @action(detail=False, methods=["delete"])
+    def delete_account(self, request):
+        user = request.user
+        user_id = user.id
+        try:
+            RefreshToken(request.data.get("refresh")).blacklist()
+        except Exception as e:
+            logger.warning("Failed to blacklist refresh token on account delete: %s", e)
+        log_event(AuditLog.ACCOUNT_DELETE, request=request, user_id=user_id)
+        user.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class UserViewSet(
