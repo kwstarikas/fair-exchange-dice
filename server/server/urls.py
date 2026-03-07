@@ -16,6 +16,7 @@ urlpatterns = [
 
     # Authentication API (uses router)
     path('api/', include('authentication.urls')),
+    path('api/', include('game.urls')),
     path('api/token/', jwt_views.TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', jwt_views.TokenRefreshView.as_view(), name='token_refresh'),
 ]

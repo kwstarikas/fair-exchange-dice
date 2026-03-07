@@ -9,6 +9,12 @@ export default defineConfig({
   plugins: [react()],
   // Proxy API requests to Django during development
   server: {
+    allowedHosts: ['narcisa-kathartic-celestina.ngrok-free.dev'],
+    hmr: {
+      host: 'narcisa-kathartic-celestina.ngrok-free.dev',
+      protocol: 'wss',
+      clientPort: 443,
+    },
     proxy: {
       '/api': {
         target: proxyTarget,
