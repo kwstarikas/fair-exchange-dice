@@ -201,6 +201,11 @@ cython_debug/
 .cursorignore
 .cursorindexingignore
 
+# Local TLS assets
+certs/*.pem
+certs/*.key
+certs/*.crt
+
 # Marimo
 marimo/_static/
 marimo/_lsp/
