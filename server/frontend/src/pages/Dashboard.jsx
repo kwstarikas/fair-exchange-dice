@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { isLoggedIn, clearTokens, getRefreshToken, authFetch } from '../auth'
+import { isLoggedIn, clearTokens, authFetch } from '../auth'
 
 const diceFaces = { 1: '⚀', 2: '⚁', 3: '⚂', 4: '⚃', 5: '⚄', 6: '⚅' }
 
@@ -170,10 +170,7 @@ function Dashboard() {
 
   async function handleLogout() {
     try {
-      await authFetch('/api/auth/logout/', {
-        method: 'POST',
-        body: JSON.stringify({ refresh: getRefreshToken() }),
-      })
+      await authFetch('/api/auth/logout/', { method: 'POST' })
     } catch {}
     clearTokens()
     navigate('/')

@@ -50,7 +50,6 @@ INSTALLED_APPS = [
     "authentication",
     "game",
     "audit",
-    "test",
 ]
 
 MIDDLEWARE = [
@@ -167,6 +166,24 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Session cookie only for admin
 SESSION_COOKIE_PATH = "/admin/"
+
+# Cache (used for login attempt tracking)
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+    }
+}
+
+# Account lockout policy
+LOGIN_MAX_ATTEMPTS = 5
+LOGIN_LOCKOUT_SECONDS = 60 * 15  # 15 minutes
+
+# Cookie-based JWT settings
+JWT_COOKIE_ACCESS_NAME = "access_token"
+JWT_COOKIE_REFRESH_NAME = "refresh_token"
+JWT_COOKIE_LOGGED_IN_NAME = "logged_in"
+JWT_COOKIE_SECURE = not DEBUG  # True in production (HTTPS only)
+JWT_COOKIE_SAMESITE = "Strict"
 
 # REST framework
 REST_FRAMEWORK = {

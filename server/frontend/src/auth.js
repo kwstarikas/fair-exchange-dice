@@ -1,62 +1,48 @@
-const ACCESS_KEY = 'access_token'
-const REFRESH_KEY = 'refresh_token'
+// Tokens are stored in httpOnly cookies set by the server.
+// JS cannot read httpOnly cookies, so a non-httpOnly "logged_in" flag cookie
+// is used to detect login state without exposing the actual tokens.
 
-export function storeTokens({ access, refresh }) {
-  localStorage.setItem(ACCESS_KEY, access)
-  localStorage.setItem(REFRESH_KEY, refresh)
-}
+const LOGGED_IN_COOKIE = 'logged_in'
 
-export function clearTokens() {
-  localStorage.removeItem(ACCESS_KEY)
-  localStorage.removeItem(REFRESH_KEY)
-}
-
-export function getAccessToken() {
-  return localStorage.getItem(ACCESS_KEY)
-}
-
-export function getRefreshToken() {
-  return localStorage.getItem(REFRESH_KEY)
+function _getCookie(name) {
+  const match = document.cookie.match(
+    new RegExp('(?:^|; )' + name.replace(/([.$?*|{}()[\]\\/+^])/g, '\\$1') + '=([^;]*)')
+  )
+  return match ? decodeURIComponent(match[1]) : null
 }
 
 export function isLoggedIn() {
-  return !!localStorage.getItem(ACCESS_KEY)
+  return _getCookie(LOGGED_IN_COOKIE) === 'true'
 }
 
-/**
- * Singleton refresh — if a refresh is already in flight, all callers
- * await the same promise instead of each firing their own request.
- * This prevents the race condition where two simultaneous 401s both try
- * to use the same refresh token, causing the second to hit a blacklisted
- * token and wipe localStorage.
- */
+export function clearTokens() {
+  // httpOnly cookies (access_token, refresh_token) can only be cleared by the server.
+  // We clear only the JS-readable flag cookie here.
+  document.cookie = `${LOGGED_IN_COOKIE}=; max-age=0; path=/`
+}
+
+// ── Singleton token refresh ────────────────────────────────────────────────────
+// Ensures only one refresh request is in flight at a time, preventing the race
+// condition where two simultaneous 401s each try to use the same refresh token.
+
 let _refreshPromise = null
 
 async function _executeRefresh() {
   const res = await fetch('/api/auth/token/refresh/', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ refresh: getRefreshToken() }),
+    credentials: 'include',  // send httpOnly cookies
   })
 
   if (res.ok) {
-    const data = await res.json()
-    if (!data.access) {
-      clearTokens()
-      return null
-    }
-    storeTokens({
-      access: data.access,
-      refresh: data.refresh ?? getRefreshToken(),
-    })
-    return data.access
+    // Server sets new cookies; nothing for JS to store
+    return true
   } else if (res.status === 429) {
-    // Rate limited — tokens are still valid, don't wipe them
-    return null
+    // Rate limited — cookies still valid, don't clear
+    return false
   } else {
-    // 401/400 — refresh token is invalid or expired
+    // 401/400 — refresh token invalid or expired
     clearTokens()
-    return null
+    return false
   }
 }
 
@@ -69,24 +55,21 @@ function refreshOnce() {
   return _refreshPromise
 }
 
-/**
- * fetch() wrapper that attaches the Bearer token and automatically
- * attempts a token refresh on 401 before giving up.
- */
+// ── Authenticated fetch wrapper ────────────────────────────────────────────────
+
 export async function authFetch(url, options = {}) {
   const headers = {
     'Content-Type': 'application/json',
     ...options.headers,
-    Authorization: `Bearer ${getAccessToken()}`,
+    // No Authorization header — browser sends httpOnly cookies automatically
   }
 
-  let response = await fetch(url, { ...options, headers })
+  let response = await fetch(url, { ...options, headers, credentials: 'include' })
 
   if (response.status === 401) {
-    const newToken = await refreshOnce()
-    if (newToken) {
-      headers.Authorization = `Bearer ${newToken}`
-      response = await fetch(url, { ...options, headers })
+    const refreshed = await refreshOnce()
+    if (refreshed) {
+      response = await fetch(url, { ...options, headers, credentials: 'include' })
     }
   }
 

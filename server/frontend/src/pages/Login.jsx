@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { isLoggedIn, storeTokens } from '../auth'
+import { isLoggedIn } from '../auth'
 
 /**
  * Login Page Component
@@ -37,17 +37,17 @@ function Login() {
     try {
       const response = await fetch('/api/auth/login/', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify(formData)
       })
 
       const data = await response.json()
 
       if (response.ok) {
-        storeTokens(data.tokens)
         navigate('/dashboard')
+      } else if (response.status === 429) {
+        setError(data.error || 'Account temporarily locked. Please try again in 15 minutes.')
       } else {
         setError(data.error || 'Login failed')
       }

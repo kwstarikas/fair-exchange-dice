@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { isLoggedIn, clearTokens, getRefreshToken, authFetch } from '../auth'
+import { isLoggedIn, clearTokens, authFetch } from '../auth'
 
 function Me() {
   const [user, setUser] = useState(null)
@@ -23,10 +23,7 @@ function Me() {
   async function handleDeleteAccount() {
     setError('')
     try {
-      await authFetch('/api/auth/delete_account/', {
-        method: 'DELETE',
-        body: JSON.stringify({ refresh: getRefreshToken() }),
-      })
+      await authFetch('/api/auth/delete_account/', { method: 'DELETE' })
     } catch {
       setError('Something went wrong. Please try again.')
       return

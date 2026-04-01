@@ -1,15 +1,22 @@
 import logging
 
+from django.conf import settings
 from rest_framework import viewsets, mixins, status
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.exceptions import TokenError
 from django.contrib.auth.models import User
 
 from .serializers import RegisterSerializer, LoginSerializer, UserSerializer
-from .helpers import _issue_jwt_pair
+from .helpers import (
+    _issue_jwt_pair,
+    _is_locked_out, _record_failed_attempt, _reset_attempts,
+    _set_auth_cookies, _clear_auth_cookies,
+)
 from audit.models import log_event, AuditLog
 
 logger = logging.getLogger(__name__)
@@ -36,14 +43,15 @@ class AuthViewSet(viewsets.GenericViewSet):
             user = serializer.save()
             log_event(AuditLog.REGISTER, request=request, user_id=user.id)
             tokens = _issue_jwt_pair(user)
-            return Response(
+            response = Response(
                 {
                     "message": "User registered successfully",
                     "user": UserSerializer(user).data,
-                    "tokens": tokens,
                 },
                 status=status.HTTP_201_CREATED,
             )
+            _set_auth_cookies(response, tokens)
+            return response
 
         return Response(
             {"error": "Registration failed", "details": serializer.errors},
@@ -54,32 +62,45 @@ class AuthViewSet(viewsets.GenericViewSet):
     def login(self, request):
         serializer = self.get_serializer(data=request.data)
 
-        if serializer.is_valid():
-            user = authenticate(
-                username=serializer.validated_data["username"],
-                password=serializer.validated_data["password"],
+        if not serializer.is_valid():
+            return Response(
+                {"error": "Login failed", "details": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
-            if user:
-                log_event(AuditLog.LOGIN_SUCCESS, request=request, user_id=user.id)
-                tokens = _issue_jwt_pair(user)
-                return Response(
-                    {
-                        "message": "Login successful",
-                        "user": UserSerializer(user).data,
-                        "tokens": tokens,
-                    }
-                )
+        username = serializer.validated_data["username"]
 
+        if _is_locked_out(username):
             log_event(AuditLog.LOGIN_FAILED, request=request, user_id=None)
             return Response(
-                {"error": "Invalid credentials"},
-                status=status.HTTP_401_UNAUTHORIZED,
+                {"error": "Account temporarily locked due to too many failed attempts. "
+                          "Please try again in 15 minutes."},
+                status=status.HTTP_429_TOO_MANY_REQUESTS,
             )
 
+        user = authenticate(
+            username=username,
+            password=serializer.validated_data["password"],
+        )
+
+        if user:
+            _reset_attempts(username)
+            log_event(AuditLog.LOGIN_SUCCESS, request=request, user_id=user.id)
+            tokens = _issue_jwt_pair(user)
+            response = Response(
+                {
+                    "message": "Login successful",
+                    "user": UserSerializer(user).data,
+                }
+            )
+            _set_auth_cookies(response, tokens)
+            return response
+
+        _record_failed_attempt(username)
+        log_event(AuditLog.LOGIN_FAILED, request=request, user_id=None)
         return Response(
-            {"error": "Login failed", "details": serializer.errors},
-            status=status.HTTP_400_BAD_REQUEST,
+            {"error": "Invalid credentials"},
+            status=status.HTTP_401_UNAUTHORIZED,
         )
 
     @action(detail=False, methods=["post"])
@@ -92,9 +113,13 @@ class AuthViewSet(viewsets.GenericViewSet):
         POST /api/auth/logout/
         Body: {"refresh": "<refresh_token>"}
         """
-        # Blacklist the refresh token
+        # Blacklist the refresh token (read from cookie, fall back to body for tests)
+        refresh_str = request.COOKIES.get(
+            getattr(settings, "JWT_COOKIE_REFRESH_NAME", "refresh_token")
+        ) or request.data.get("refresh")
         try:
-            RefreshToken(request.data.get("refresh")).blacklist()
+            if refresh_str:
+                RefreshToken(refresh_str).blacklist()
         except Exception as e:
             logger.warning("Failed to blacklist refresh token: %s", e)
 
@@ -125,7 +150,9 @@ class AuthViewSet(viewsets.GenericViewSet):
             logger.warning("Failed to blacklist access token: %s", e)
 
         log_event(AuditLog.LOGOUT, request=request, user_id=request.user.id)
-        return Response({"message": "Logged out successfully"})
+        response = Response({"message": "Logged out successfully"})
+        _clear_auth_cookies(response)
+        return response
 
     @action(detail=False, methods=["get"])
     def me(self, request):
@@ -135,13 +162,51 @@ class AuthViewSet(viewsets.GenericViewSet):
     def delete_account(self, request):
         user = request.user
         user_id = user.id
+        refresh_str = request.COOKIES.get(
+            getattr(settings, "JWT_COOKIE_REFRESH_NAME", "refresh_token")
+        ) or request.data.get("refresh")
         try:
-            RefreshToken(request.data.get("refresh")).blacklist()
+            if refresh_str:
+                RefreshToken(refresh_str).blacklist()
         except Exception as e:
             logger.warning("Failed to blacklist refresh token on account delete: %s", e)
         log_event(AuditLog.ACCOUNT_DELETE, request=request, user_id=user_id)
         user.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        response = Response(status=status.HTTP_204_NO_CONTENT)
+        _clear_auth_cookies(response)
+        return response
+
+
+class CookieTokenRefreshView(APIView):
+    """
+    Token refresh endpoint that reads the refresh token from the httpOnly cookie
+    and sets new cookies on the response. Falls back to request body for test
+    compatibility (DRF test client sends body, not cookies).
+    """
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        cookie_name = getattr(settings, "JWT_COOKIE_REFRESH_NAME", "refresh_token")
+        refresh_str = request.COOKIES.get(cookie_name) or request.data.get("refresh")
+
+        if not refresh_str:
+            return Response(
+                {"error": "No refresh token provided"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            refresh = RefreshToken(refresh_str)
+            tokens = {
+                "access": str(refresh.access_token),
+                "refresh": str(refresh),  # rotated token
+            }
+        except TokenError as e:
+            return Response({"error": str(e)}, status=status.HTTP_401_UNAUTHORIZED)
+
+        response = Response({"message": "Token refreshed", "access": tokens["access"]})
+        _set_auth_cookies(response, tokens)
+        return response
 
 
 class UserViewSet(

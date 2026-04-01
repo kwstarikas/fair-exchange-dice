@@ -23,7 +23,11 @@ def register(client, payload=None):
 
 
 def get_tokens(client, payload=None):
-    return register(client, payload).data['tokens']
+    response = register(client, payload)
+    return {
+        'access': response.cookies['access_token'].value,
+        'refresh': response.cookies['refresh_token'].value,
+    }
 
 
 def auth(token):
@@ -39,17 +43,15 @@ class RegisterViewSuccessTest(APITestCase):
         self.assertEqual(self.response.status_code, status.HTTP_201_CREATED)
 
     def test_response_has_access_token(self):
-        self.assertIn('tokens', self.response.data)
-        self.assertIn('access', self.response.data['tokens'])
-        self.assertTrue(self.response.data['tokens']['access'])
+        self.assertIn('access_token', self.response.cookies)
+        self.assertTrue(self.response.cookies['access_token'].value)
 
     def test_response_has_refresh_token(self):
-        self.assertIn('tokens', self.response.data)
-        self.assertIn('refresh', self.response.data['tokens'])
-        self.assertTrue(self.response.data['tokens']['refresh'])
+        self.assertIn('refresh_token', self.response.cookies)
+        self.assertTrue(self.response.cookies['refresh_token'].value)
 
     def test_access_token_is_usable(self):
-        access = self.response.data['tokens']['access']
+        access = self.response.cookies['access_token'].value
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {access}')
         me = self.client.get(ME_URL)
         self.assertEqual(me.status_code, status.HTTP_200_OK)
@@ -133,17 +135,17 @@ class LoginViewTest(APITestCase):
         self.assertEqual(self._login().status_code, status.HTTP_200_OK)
 
     def test_response_has_access_token(self):
-        data = self._login().data
-        self.assertIn('tokens', data)
-        self.assertIn('access', data['tokens'])
+        response = self._login()
+        self.assertIn('access_token', response.cookies)
+        self.assertTrue(response.cookies['access_token'].value)
 
     def test_response_has_refresh_token(self):
-        data = self._login().data
-        self.assertIn('tokens', data)
-        self.assertIn('refresh', data['tokens'])
+        response = self._login()
+        self.assertIn('refresh_token', response.cookies)
+        self.assertTrue(response.cookies['refresh_token'].value)
 
     def test_access_token_is_usable(self):
-        tokens = self._login().data['tokens']
+        tokens = {'access': self._login().cookies['access_token'].value}
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {tokens["access"]}')
         self.assertEqual(self.client.get(ME_URL).status_code, status.HTTP_200_OK)
 
@@ -177,13 +179,16 @@ class MeViewTest(APITestCase):
         self.assertEqual(self.client.get(ME_URL).data['username'], 'johndoe')
 
     def test_without_token_returns_401(self):
+        self.client.cookies.clear()
         self.assertEqual(self.client.get(ME_URL).status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_with_invalid_token_returns_401(self):
+        self.client.cookies.clear()
         self.client.credentials(HTTP_AUTHORIZATION='Bearer notavalidtoken')
         self.assertEqual(self.client.get(ME_URL).status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_with_wrong_scheme_returns_401(self):
+        self.client.cookies.clear()
         self.client.credentials(HTTP_AUTHORIZATION=f'Token {self.tokens["access"]}')
         self.assertEqual(self.client.get(ME_URL).status_code, status.HTTP_401_UNAUTHORIZED)
 
@@ -221,6 +226,7 @@ class LogoutViewTest(APITestCase):
 
     def test_logout_requires_authentication(self):
         self.client.credentials()
+        self.client.cookies.clear()
         response = self.client.post(LOGOUT_URL, {'refresh': self.tokens['refresh']}, format='json')
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
@@ -257,11 +263,13 @@ class TokenRefreshViewTest(APITestCase):
         self.assertEqual(self.client.get(ME_URL).status_code, status.HTTP_200_OK)
 
     def test_invalid_refresh_returns_401(self):
+        self.client.cookies.clear()
         response = self.client.post(
             TOKEN_REFRESH_URL, {'refresh': 'notavalidtoken'}, format='json'
         )
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_missing_refresh_returns_400(self):
+        self.client.cookies.clear()
         response = self.client.post(TOKEN_REFRESH_URL, {}, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)

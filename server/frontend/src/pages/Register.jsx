@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { isLoggedIn, storeTokens } from '../auth'
+import { isLoggedIn } from '../auth'
 
 /**
  * Registration Page Component
@@ -19,7 +19,8 @@ function Register() {
     username: '',
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    privacyAccepted: false
   })
 
   const [error, setError] = useState('')
@@ -36,9 +37,10 @@ function Register() {
   // This runs when any input changes
   // "e" is the event object, e.target is the input element
   const handleChange = (e) => {
+    const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value
     setFormData({
       ...formData,  // Keep existing data
-      [e.target.name]: e.target.value  // Update the changed field
+      [e.target.name]: value  // Update the changed field
     })
     // Clear error when user starts typing
     if (error) setError('')
@@ -64,6 +66,10 @@ function Register() {
       setError('Password is too common. Choose a stronger password.')
       return false
     }
+    if (!formData.privacyAccepted) {
+      setError('You must accept the privacy notice to register.')
+      return false
+    }
     return true
   }
 
@@ -81,9 +87,8 @@ function Register() {
       // Send data to Django API
       const response = await fetch('/api/auth/register/', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           first_name: formData.firstName,
           last_name: formData.lastName,
@@ -96,7 +101,6 @@ function Register() {
       const data = await response.json()
 
       if (response.ok) {
-        storeTokens(data.tokens)
         navigate('/dashboard')
       } else {
         // Display the error message from the API
@@ -197,6 +201,20 @@ function Register() {
             required
             disabled={loading}
           />
+        </div>
+
+        <div className="form-group privacy-notice">
+          <label>
+            <input
+              type="checkbox"
+              name="privacyAccepted"
+              checked={formData.privacyAccepted}
+              onChange={handleChange}
+              disabled={loading}
+            />
+            {' '}I understand that this service stores my username, email address, first name,
+            and last name for the purpose of providing the Fair Exchange Dice game service.
+          </label>
         </div>
 
         <button type="submit" disabled={loading}>

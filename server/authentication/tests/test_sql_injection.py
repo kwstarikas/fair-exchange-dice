@@ -239,8 +239,9 @@ class SqlInjectionLoginEndpointTest(APITestCase):
                 r = self._login(username="legituser", password=payload)
                 self.assertIn(
                     r.status_code,
-                    [status.HTTP_400_BAD_REQUEST, status.HTTP_401_UNAUTHORIZED],
-                    f"Expected 400 or 401 for password={payload!r}, got {r.status_code}",
+                    [status.HTTP_400_BAD_REQUEST, status.HTTP_401_UNAUTHORIZED,
+                     status.HTTP_429_TOO_MANY_REQUESTS],
+                    f"Expected 400, 401, or 429 for password={payload!r}, got {r.status_code}",
                 )
 
     def test_classic_bypass_does_not_authenticate(self):

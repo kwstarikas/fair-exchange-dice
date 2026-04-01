@@ -36,24 +36,6 @@ services:
           path: ./server
           target: /app
 
-  client:
-    build:
-      context: ./client
-      dockerfile: Dockerfile
-    ports:
-      - "8001:8001"
-    env_file:
-      - .env
-    depends_on:
-      - server
-    volumes:
-      - ./client:/app
-    develop:
-      watch:
-        - action: sync
-          path: ./client
-          target: /app
-
   frontend:
     build:
       context: ./server/frontend
