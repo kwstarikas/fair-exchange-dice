@@ -14,5 +14,5 @@ RUN pip install --no-cache-dir -r requirements.txt && pip install --no-cache-dir
 # Copy project
 COPY . .
 
-# Run migrations and start server
-CMD ["sh", "-c", "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"]
+# Run migrations and start Django over HTTPS
+CMD ["sh", "-c", "python manage.py migrate && uvicorn server.asgi:application --host 0.0.0.0 --port 8000 --ssl-certfile /certs/localhost.pem --ssl-keyfile /certs/localhost-key.pem"]

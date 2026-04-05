@@ -25,11 +25,14 @@ services:
       - "8000:8000"
     env_file:
       - .env
+    environment:
+      DJANGO_SSL: "True"
     depends_on:
       db:
         condition: service_healthy
     volumes:
       - ./server:/app
+      - ./certs:/certs:ro
     develop:
       watch:
         - action: sync
@@ -58,31 +61,23 @@ services:
     build:
       context: ./server/frontend
       dockerfile: Dockerfile
+    ports:
+      - "5173:5173"
     environment:
-      VITE_PROXY_TARGET: http://server:8000
-      VITE_PUBLIC_HOST: ${VITE_PUBLIC_HOST:-}
+      VITE_PROXY_TARGET: https://server:8000
+      VITE_SSL_CERT_FILE: /certs/localhost.pem
+      VITE_SSL_KEY_FILE: /certs/localhost-key.pem
     depends_on:
       - server
     volumes:
       - ./server/frontend:/app
       - /app/node_modules
+      - ./certs:/certs:ro
     develop:
       watch:
         - action: sync
           path: ./server/frontend
           target: /app
-
-  nginx:
-    image: nginx:1.27-alpine
-    depends_on:
-      - frontend
-      - server
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./docker/nginx/local-https.conf:/etc/nginx/conf.d/default.conf:ro
-      - ./certs:/etc/nginx/certs:ro
 
 volumes:
   postgres_data:
