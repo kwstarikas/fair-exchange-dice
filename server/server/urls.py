@@ -1,4 +1,6 @@
+from django.conf import settings
 from django.contrib import admin
+from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 from django.urls import path, include
 from drf_spectacular.views import (
     SpectacularAPIView,
@@ -6,6 +8,7 @@ from drf_spectacular.views import (
     SpectacularRedocView,
 )
 from rest_framework_simplejwt import views as jwt_views
+
 urlpatterns = [
     path('admin/', admin.site.urls),
 
@@ -20,3 +23,6 @@ urlpatterns = [
     path('api/token/', jwt_views.TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', jwt_views.TokenRefreshView.as_view(), name='token_refresh'),
 ]
+
+if settings.DEBUG:
+    urlpatterns += staticfiles_urlpatterns()

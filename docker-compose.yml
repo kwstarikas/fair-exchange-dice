@@ -25,11 +25,14 @@ services:
       - "8000:8000"
     env_file:
       - .env
+    environment:
+      DJANGO_SSL: "True"
     depends_on:
       db:
         condition: service_healthy
     volumes:
       - ./server:/app
+      - ./certs:/certs:ro
     develop:
       watch:
         - action: sync
@@ -43,12 +46,15 @@ services:
     ports:
       - "5173:5173"
     environment:
-      VITE_PROXY_TARGET: http://server:8000
+      VITE_PROXY_TARGET: https://server:8000
+      VITE_SSL_CERT_FILE: /certs/localhost.pem
+      VITE_SSL_KEY_FILE: /certs/localhost-key.pem
     depends_on:
       - server
     volumes:
       - ./server/frontend:/app
       - /app/node_modules
+      - ./certs:/certs:ro
     develop:
       watch:
         - action: sync

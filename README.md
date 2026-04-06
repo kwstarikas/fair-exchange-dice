@@ -33,10 +33,10 @@ docker compose exec server python manage.py createsuperuser
 
 | Service  | URL                          | Description              |
 |----------|------------------------------|--------------------------|
-| Frontend | http://localhost:5173        | React app (Vite)         |
-| Django   | http://localhost:8000        | REST API                 |
-| Admin    | http://localhost:8000/admin  | Django admin panel       |
-| Swagger  | http://localhost:8000/api/docs/ | Interactive API docs  |
+| Frontend | https://localhost:5173       | React app (Vite)         |
+| Django   | https://localhost:8000       | REST API                 |
+| Admin    | https://localhost:8000/admin | Django admin panel       |
+| Swagger  | https://localhost:8000/api/docs/ | Interactive API docs |
 
 ---
 
@@ -275,7 +275,7 @@ npm install
 npm run dev
 ```
 
-The Vite dev server starts on http://localhost:5173 and proxies `/api/*` to `http://localhost:8000`.
+The Vite dev server starts on `https://localhost:5173` and proxies `/api/*` to `https://localhost:8000`.
 
 ### Environment Variables
 
