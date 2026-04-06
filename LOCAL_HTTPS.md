@@ -1,6 +1,6 @@
 # Local HTTPS Setup
 
-This project now uses direct local TLS in Django and Vite. The `nginx` reverse proxy is no longer part of the local stack.
+This project uses direct local TLS in Django and Vite for HTTPS development.
 
 ## What changed
 
