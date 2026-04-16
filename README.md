@@ -4,7 +4,50 @@ Multiplayer dice game where two players challenge each other to a dice duel. Use
 
 ---
 
-## Quick Start
+## Setup
+
+### 1. Install mkcert (one-time)
+
+Both Django and Vite serve over HTTPS locally using certificates from `mkcert`.
+
+**Fedora:**
+
+```bash
+sudo dnf install nss-tools
+sudo curl -L https://github.com/FiloSottile/mkcert/releases/latest/download/mkcert-v1.4.4-linux-amd64 -o /usr/local/bin/mkcert
+sudo chmod +x /usr/local/bin/mkcert
+```
+
+**Debian / Ubuntu:**
+
+```bash
+sudo apt install mkcert libnss3-tools
+```
+
+**Windows:**
+
+```powershell
+winget install FiloSottile.mkcert
+```
+
+### 2. Trust the local CA
+
+```bash
+mkcert -install
+```
+
+Restart Firefox after this if you use it.
+
+### 3. Generate certificates
+
+From the project root:
+
+```bash
+mkdir -p certs
+mkcert -cert-file certs/localhost.pem -key-file certs/localhost-key.pem localhost 127.0.0.1 ::1
+```
+
+### 4. Start the stack
 
 ```bash
 docker compose up -d --build
@@ -19,7 +62,7 @@ docker compose exec server python manage.py createsuperuser  # optional
 | Admin    | https://localhost:8000/admin     |
 | Swagger  | https://localhost:8000/api/docs/ |
 
-For HTTPS setup see [LOCAL_HTTPS.md](LOCAL_HTTPS.md).
+Django terminates TLS directly via uvicorn. Vite also serves over HTTPS. The frontend proxies `/api` and `/admin` to Django.
 
 ---
 
@@ -119,20 +162,39 @@ The server can't cheat either — it never sees the nonce until the reveal phase
 
 ---
 
-## API Reference
+## Authentication
 
-Auth is handled via httpOnly cookies set by the server. No `Authorization` header needed.
+JWT via `djangorestframework-simplejwt`, stored in httpOnly cookies (never in localStorage or JS-accessible storage):
+
+- **Access token** — 1 hour, httpOnly cookie
+- **Refresh token** — 7 days, rotated on use, httpOnly cookie
+- **Blacklisting** — logout invalidates both tokens immediately
+- **Lockout** — 5 failed logins → 15-minute lockout
+
+A non-httpOnly `logged_in` flag cookie lets the frontend detect auth state without exposing the tokens.
+
+### Auth Flow
+
+1. **Register / Login** → server validates credentials, issues JWT pair, sets `access_token`, `refresh_token` (httpOnly) and `logged_in` (JS-readable) cookies.
+2. **Authenticated requests** → browser sends cookies automatically via `credentials: 'include'`. No `Authorization` header needed.
+3. **Token refresh** → when a request gets 401, `authFetch` calls `POST /api/auth/token/refresh/`. The server reads the refresh cookie, issues new tokens, sets new cookies.
+4. **Logout** → server blacklists both tokens and clears all cookies.
+5. **Account lockout** → 5 failed login attempts within 15 minutes locks the account. Tracked in server-side cache.
+
+---
+
+## API Reference
 
 ### Authentication
 
-| Method   | Endpoint                    | Description           |
-|----------|-----------------------------|-----------------------|
-| `POST`   | `/api/auth/register/`       | Create account        |
+| Method   | Endpoint                    | Description             |
+|----------|-----------------------------|-----------------------  |
+| `POST`   | `/api/auth/register/`       | Create account          |
 | `POST`   | `/api/auth/login/`          | Login, sets JWT cookies |
-| `POST`   | `/api/auth/logout/`         | Blacklist tokens      |
-| `GET`    | `/api/auth/me/`             | Current user info     |
-| `DELETE` | `/api/auth/delete_account/` | Delete account        |
-| `POST`   | `/api/auth/token/refresh/`  | Refresh access token  |
+| `POST`   | `/api/auth/logout/`         | Blacklist tokens        |
+| `GET`    | `/api/auth/me/`             | Current user info       |
+| `DELETE` | `/api/auth/delete_account/` | Delete account          |
+| `POST`   | `/api/auth/token/refresh/`  | Refresh access token    |
 
 ### Game
 
@@ -154,19 +216,6 @@ Auth is handled via httpOnly cookies set by the server. No `Authorization` heade
 pending ──accept──▶ committing ──both committed──▶ revealing ──both revealed──▶ finished
        └──decline──▶ declined
 ```
-
----
-
-## Authentication
-
-JWT via `djangorestframework-simplejwt`:
-
-- **Access token** — 1 hour, stored in httpOnly cookie
-- **Refresh token** — 7 days, rotated on use, httpOnly cookie
-- **Blacklisting** — logout invalidates both tokens immediately
-- **Lockout** — 5 failed logins → 15-minute lockout
-
-A non-httpOnly `logged_in` flag cookie lets the frontend detect auth state without exposing the tokens.
 
 ---
 
@@ -198,7 +247,7 @@ Runs on `https://localhost:5173`, proxies `/api/*` to `https://localhost:8000`.
 |----------------------|----------------|-------------|
 | `DJANGO_SECRET_KEY`  | (dev key)      | Change in production |
 | `DEBUG`              | `True`         | `False` in production |
-| `POSTGRES_DB`        | `fairexchange`  | Database name |
+| `POSTGRES_DB`        | `fairexchange` | Database name |
 | `POSTGRES_USER`      | `postgres`     | Database user |
 | `POSTGRES_PASSWORD`  | `postgres`     | Database password |
 | `POSTGRES_HOST`      | `db`           | Database host |

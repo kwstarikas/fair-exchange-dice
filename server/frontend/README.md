@@ -11,4 +11,4 @@ npm run dev
 
 Runs on `https://localhost:5173`. All `/api/*` requests are proxied to `https://localhost:8000`.
 
-For local HTTPS, see [LOCAL_HTTPS.md](../../LOCAL_HTTPS.md).
+For HTTPS and full setup instructions, see the [project README](../../README.md#setup).
