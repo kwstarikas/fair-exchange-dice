@@ -216,8 +216,3 @@ class UserViewSet(
     serializer_class = UserSerializer
     permission_classes = [IsAdminUser]
 
-    def destroy(self, request, *args, **kwargs):
-        return super().destroy(request, *args, **kwargs)
-
-    def partial_update(self, request, *args, **kwargs):
-        return super().partial_update(request, *args, **kwargs)

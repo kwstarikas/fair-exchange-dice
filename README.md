@@ -230,11 +230,11 @@ pending ──accept──▶ committing ──both committed──▶ revealing
 
 The app uses **JWT (JSON Web Tokens)** via `djangorestframework-simplejwt`:
 
-- **Access token** — short-lived (30 minutes), sent as `Authorization: Bearer <token>` on every request
-- **Refresh token** — long-lived (7 days), used to obtain a new access token when the current one expires
+- **Access token** — short-lived (1 hour), sent automatically via httpOnly cookie on every request
+- **Refresh token** — long-lived (7 days), rotated on use, stored in httpOnly cookie
 - **Token blacklisting** — logout blacklists both tokens so they cannot be reused even before expiry
 
-The frontend stores tokens in `localStorage` and the `authFetch` helper automatically retries any 401 response by refreshing the access token before giving up.
+The `authFetch` helper automatically retries any 401 response by refreshing the access token before giving up.
 
 ---
 

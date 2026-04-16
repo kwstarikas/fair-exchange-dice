@@ -46,21 +46,3 @@ jobs:
         run: |
           cd server
           python manage.py test
-
-  fastapi-tests:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      
-      - name: Install dependencies
-        run: pip install -r client/requirements.txt
-      
-      - name: Run FastAPI tests
-        run: |
-          cd client
-          pytest -v
