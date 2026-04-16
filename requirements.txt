@@ -1,9 +1,0 @@
-# Root requirements for local development (without Docker)
-# Each service has its own requirements.txt
-
-# Django server
-Django==6.0.3
-djangorestframework==3.16.1
-drf-spectacular==0.28.0
-psycopg[binary]==3.2.13
-coverage==7.6.10

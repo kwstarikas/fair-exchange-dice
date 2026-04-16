@@ -1,66 +1,61 @@
 # Local HTTPS Setup
 
-This project uses direct local TLS in Django and Vite for HTTPS development.
+Django and Vite both serve over HTTPS locally using certificates from `mkcert`.
 
-## What changed
+## One-time setup
 
-- Django serves HTTPS directly on `https://localhost:8000`
-- Vite serves HTTPS directly on `https://localhost:5173`
-- Both services use the same locally generated certificates from `mkcert`
+### 1. Install mkcert
 
-## One-time setup per machine
+**Fedora:**
 
-1. Install `mkcert`
-
-Windows:
-
-```powershell
-winget install FiloSottile.mkcert
+```bash
+sudo dnf install nss-tools
+sudo curl -L https://github.com/FiloSottile/mkcert/releases/latest/download/mkcert-v1.4.4-linux-amd64 -o /usr/local/bin/mkcert
+sudo chmod +x /usr/local/bin/mkcert
 ```
 
-Linux:
+**Debian / Ubuntu:**
 
 ```bash
 sudo apt install mkcert libnss3-tools
 ```
 
-2. Install the local CA into your OS/browser trust store
+**Windows:**
+
+```powershell
+winget install FiloSottile.mkcert
+```
+
+### 2. Trust the local CA
 
 ```bash
 mkcert -install
 ```
 
-3. Generate local certificates from the project root
+Restart Firefox after this if you use it.
+
+### 3. Generate certificates
+
+From the project root:
 
 ```bash
+mkdir -p certs
 mkcert -cert-file certs/localhost.pem -key-file certs/localhost-key.pem localhost 127.0.0.1 ::1
 ```
 
-## Start the stack
+## Run
 
 ```bash
 docker compose up -d --build
 ```
 
-Then open:
-
-- `https://localhost:5173`
-- `https://localhost:8000/api/docs/`
-- `https://localhost:8000/admin/`
-
-## Verify
-
-```bash
-docker compose ps
-docker compose logs -f server
-docker compose logs -f frontend
-```
-
-You should see `db`, `server`, and `frontend` running.
+- Frontend: `https://localhost:5173`
+- API docs: `https://localhost:8000/api/docs/`
+- Admin: `https://localhost:8000/admin/`
 
 ## Notes
 
-- Django terminates TLS directly with `uvicorn`.
-- Vite also runs over HTTPS so the local app is fully served with TLS.
-- The frontend proxies `/api` and `/admin` to Django over HTTPS.
-- If port `5173` or `8000` is already in use, stop the conflicting service before starting Docker Compose.
+- Django terminates TLS directly via uvicorn.
+- Vite also serves over HTTPS.
+- The frontend proxies `/api` and `/admin` to Django.
+- If port 5173 or 8000 is in use, stop the conflicting process first.
