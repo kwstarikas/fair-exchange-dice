@@ -3,7 +3,7 @@ name: Sample Test
 on:
   workflow_dispatch:
     inputs:
-      name:
+      username:
         description: 'Your name'
         required: true
         type: string
@@ -12,7 +12,7 @@ on:
         required: false
         type: string
         default: 'Hello'
-      environment:
+      target_env:
         description: 'Target environment'
         required: false
         type: string
@@ -23,10 +23,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Step 1 - Greet
-        run: echo "${{ inputs.greeting }}, ${{ inputs.name }}!"
+        run: echo "${{ inputs.greeting }}, ${{ inputs.username }}!"
 
       - name: Step 2 - Show environment
-        run: echo "Running in environment: ${{ inputs.environment }}"
+        run: echo "Running in environment: ${{ inputs.target_env }}"
 
       - name: Step 3 - Show context
         run: echo "Triggered by ${{ github.actor }} on ${{ github.ref }}"
