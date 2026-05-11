@@ -1,29 +1,35 @@
-name: Dispatch test
+name: Sample Test Workflow
 
-  on:
-    workflow_dispatch:
-      inputs:
-        environment:
-          description: 'Target environment for the run'
-          required: true
-          type: choice
-          options: [staging, production]
-        debug:
-          description: 'Enable verbose logging'
-          required: false
-          type: boolean
-          default: false
-        notes:
-          description: 'Optional free-form notes attached to the run'
-          required: false
-          type: string
+on:
+  workflow_dispatch:
+    inputs:
+      name:
+        description: 'Your name'
+        required: true
+        type: string
+      greeting:
+        description: 'Greeting to use'
+        required: false
+        type: string
+        default: 'Hello'
+      environment:
+        description: 'Target environment'
+        required: false
+        type: string
+        default: 'dev'
 
-  jobs:
-    noop:
-      runs-on: ubuntu-latest
-      steps:
-        - name: Echo inputs
-          run: |
-            echo "environment=${{ inputs.environment }}"
-            echo "debug=${{ inputs.debug }}"
-            echo "notes=${{ inputs.notes }}"
+jobs:
+  echo-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Step 1 - Greet
+        run: echo "${{ inputs.greeting }}, ${{ inputs.name }}!"
+
+      - name: Step 2 - Show environment
+        run: echo "Running in environment: ${{ inputs.environment }}"
+
+      - name: Step 3 - Show context
+        run: echo "Triggered by ${{ github.actor }} on ${{ github.ref }}"
+
+      - name: Step 4 - Done
+        run: echo "Workflow complete."
