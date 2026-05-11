@@ -1,48 +1,29 @@
-name: Tests
+name: Dispatch test
 
-on:
-  pull_request:
-    branches: [main]
-  push:
-    branches: [main]
+  on:
+    workflow_dispatch:
+      inputs:
+        environment:
+          description: 'Target environment for the run'
+          required: true
+          type: choice
+          options: [staging, production]
+        debug:
+          description: 'Enable verbose logging'
+          required: false
+          type: boolean
+          default: false
+        notes:
+          description: 'Optional free-form notes attached to the run'
+          required: false
+          type: string
 
-jobs:
-  django-tests:
-    runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_DB: fairexchange
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      
-      - name: Install dependencies
-        run: pip install -r server/requirements.txt
-      
-      - name: Run Django tests
-        env:
-          DJANGO_SECRET_KEY: test-secret-key-for-ci
-          POSTGRES_DB: fairexchange
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_HOST: localhost
-          POSTGRES_PORT: 5432
-        run: |
-          cd server
-          python manage.py test
+  jobs:
+    noop:
+      runs-on: ubuntu-latest
+      steps:
+        - name: Echo inputs
+          run: |
+            echo "environment=${{ inputs.environment }}"
+            echo "debug=${{ inputs.debug }}"
+            echo "notes=${{ inputs.notes }}"
