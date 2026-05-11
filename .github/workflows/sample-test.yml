@@ -26,11 +26,12 @@ jobs:
         run: echo "${{ inputs.greeting }}, ${{ inputs.username }}!"
 
       - name: Step 2 - Show environment
-        run: | echo "Running in environment: ${{ inputs.target_env }}"
-
+        run: |
+          echo "Running in environment: ${{ inputs.target_env }}"
 
       - name: Step 3 - Show context
-        run: echo "Triggered by ${{ github.actor }} on ${{ github.ref }}"
+        run: |
+          echo "Triggered by ${{ github.actor }} on ${{ github.ref }}"
 
       - name: Step 4 - Done
         run: echo "Workflow complete."
